@@ -17,6 +17,7 @@ class RetryInterceptor extends Interceptor {
     required this.dio,
     this.logPrint,
     this.retries = 3,
+    this.recordException,
     this.retryDelays = const [
       Duration(seconds: 1),
       Duration(seconds: 3),
@@ -45,6 +46,9 @@ class RetryInterceptor extends Interceptor {
       );
     }
   }
+
+  /// Used to Record Exception (e.g. Sentry / Crashlytics) if all retries failed
+  final void Function(Object? exception)? recordException;
 
   static const _multipartRetryHelpLink =
       'https://github.com/rodion-m/dio_smart_retry#retry-requests-with-multipartform-data';
@@ -122,6 +126,7 @@ class RetryInterceptor extends Interceptor {
     final shouldRetry = attempt <= retries && await _shouldRetry(err, attempt);
 
     if (!shouldRetry) {
+      recordException?.call(err);
       return super.onError(err, handler);
     }
 
